@@ -26,9 +26,7 @@ class ArticleModel {
       title: json['title'] ?? 'No Title',
       description: json['description'] ?? '',
       url: json['url'] ?? '',
-      coverImage:
-          json['cover_image'] ??
-          'https://placehold.co/600x400/png?text=No+Image',
+      coverImage: json['cover_image'] ?? '',
       publishedAt: json['readable_publish_date'] ?? '',
       authorName: json['user']?['name'] ?? 'Anonymous',
       authorProfileImage:

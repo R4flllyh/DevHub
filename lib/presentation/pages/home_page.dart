@@ -252,6 +252,37 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(height: 12.0),
                           ],
 
+                          // 💡 SINKRONISASI TAGS: Pasang Wrap ini agar tags muncul di Home Page
+                          if (article.tags.isNotEmpty) ...[
+                            Wrap(
+                              spacing: 6.0, // Jarak horizontal antar chip tag
+                              runSpacing:
+                                  4.0, // Jarak vertikal jika tag melipat ke baris baru
+                              children: article.tags.take(3).map((tag) {
+                                // 💡 Trik: .take(3) agar kartu tidak kepenuhan jika tag terlalu banyak
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                    vertical: 4.0,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF5F5F5),
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                  child: Text(
+                                    '#$tag',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 8.0),
+                          ],
+
                           // 3. Judul Artikel (Langsung merapat ke atas jika tidak ada gambar)
                           Text(
                             article.title,

@@ -110,147 +110,175 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             )
-          : ListView.builder(
-              controller: _scrollController, // Pasang ScrollController di sini
-              // Tambah item count + 1 jika masih ada data atau sedang loading untuk menampilkan indikator di bawah
-              itemCount: _articles.length + (_hasMore ? 1 : 0),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 12.0,
-              ),
-              itemBuilder: (context, index) {
-                // Jika index sama dengan panjang list artikel, berarti ini baris paling bawah
-                if (index == _articles.length) {
-                  if (_errorMessage != null) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+          : RefreshIndicator(
+              color: const Color(0xFF1A1A1A), // Warna indikator refresh
+              backgroundColor:
+                  Colors.white, // Warna background indikator refresh
+              onRefresh: () async {
+                // Logic for refresh: reset state and fetch articles again
+                _currentPage = 1;
+                _hasMore = true;
+
+                try {
+                  final List<ArticleModel> refreshedArticles =
+                      await _newsApiProvider.getLatestArticles(
+                        page: _currentPage,
+                      );
+
+                  setState(() {
+                    _articles.clear();
+                    _articles.addAll(refreshedArticles);
+                    _currentPage++;
+                  });
+                } catch (e) {
+                  setState(() {
+                    _errorMessage = e.toString();
+                  });
+                }
+              },
+              child: ListView.builder(
+                controller:
+                    _scrollController, // Pasang ScrollController di sini
+                // Tambah item count + 1 jika masih ada data atau sedang loading untuk menampilkan indikator di bawah
+                itemCount: _articles.length + (_hasMore ? 1 : 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 12.0,
+                ),
+                itemBuilder: (context, index) {
+                  // Jika index sama dengan panjang list artikel, berarti ini baris paling bawah
+                  if (index == _articles.length) {
+                    if (_errorMessage != null) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: TextButton(
+                            onPressed: _fetchArticles,
+                            child: const Text(
+                              'Tap to retry',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    // Tampilkan loading kecil di bawah saat memuat halaman berikutnya
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24.0),
                       child: Center(
-                        child: TextButton(
-                          onPressed: _fetchArticles,
-                          child: const Text(
-                            'Tap to retry',
-                            style: TextStyle(color: Colors.grey),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF1A1A1A),
+                            strokeWidth: 2,
                           ),
                         ),
                       ),
                     );
                   }
-                  // Tampilkan loading kecil di bawah saat memuat halaman berikutnya
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24.0),
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF1A1A1A),
-                          strokeWidth: 2,
-                        ),
+
+                  final article = _articles[index];
+
+                  // UI Card Minimalis Anda tetap sama
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 32.0),
+                    child: InkWell(
+                      onTap: () {},
+                      splashColor: Colors.grey[100],
+                      highlightColor: Colors.transparent,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 10,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage: NetworkImage(
+                                  article.authorProfileImage,
+                                ),
+                              ),
+                              const SizedBox(width: 8.0),
+                              Text(
+                                article.authorName,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF555555),
+                                ),
+                              ),
+                              const SizedBox(width: 6.0),
+                              const Text(
+                                '•',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 6.0),
+                              Text(
+                                article.publishedAt,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10.0),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: Image.network(
+                              article.coverImage,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 200,
+                                  color: const Color(0xFFF5F5F5),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      color: Colors.grey,
+                                      size: 28,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12.0),
+                          Text(
+                            article.title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A1A1A),
+                              height: 1.3,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6.0),
+                          Text(
+                            article.description,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   );
-                }
-
-                final article = _articles[index];
-
-                // UI Card Minimalis Anda tetap sama
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 32.0),
-                  child: InkWell(
-                    onTap: () {},
-                    splashColor: Colors.grey[100],
-                    highlightColor: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 10,
-                              backgroundColor: Colors.grey[200],
-                              backgroundImage: NetworkImage(
-                                article.authorProfileImage,
-                              ),
-                            ),
-                            const SizedBox(width: 8.0),
-                            Text(
-                              article.authorName,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF555555),
-                              ),
-                            ),
-                            const SizedBox(width: 6.0),
-                            const Text(
-                              '•',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(width: 6.0),
-                            Text(
-                              article.publishedAt,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10.0),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: Image.network(
-                            article.coverImage,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 200,
-                                color: const Color(0xFFF5F5F5),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    color: Colors.grey,
-                                    size: 28,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12.0),
-                        Text(
-                          article.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
-                            height: 1.3,
-                            letterSpacing: -0.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6.0),
-                        Text(
-                          article.description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            height: 1.4,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                },
+              ),
             ),
     );
   }

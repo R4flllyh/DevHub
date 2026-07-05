@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/article_model.dart';
 import '../../data/providers/news_api_provider.dart';
 import '../widgets/loading_shimmer.dart';
+import 'article_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -181,7 +182,15 @@ class _HomePageState extends State<HomePage> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 32.0),
                     child: InkWell(
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ArticleDetailPage(article: article),
+                          ),
+                        );
+                      },
                       splashColor: Colors.grey[100],
                       highlightColor: Colors.transparent,
                       child: Column(

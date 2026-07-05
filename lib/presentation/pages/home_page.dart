@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/article_model.dart';
 import '../../data/providers/news_api_provider.dart';
+import '../widgets/loading_shimmer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -97,9 +98,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.white,
       // Mengganti FutureBuilder dengan kondisi State konvensional
       body: _articles.isEmpty && _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1A1A1A)),
-            )
+          ? const LoadingShimmer()
           : _errorMessage != null && _articles.isEmpty
           ? Center(
               child: Padding(

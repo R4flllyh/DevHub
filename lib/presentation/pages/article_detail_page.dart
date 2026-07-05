@@ -65,20 +65,6 @@ class ArticleDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Judul Artikel Utama
-            Text(
-              article.title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-                height: 1.3,
-                letterSpacing: -0.5,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
             // Kondisional Rendering Gambar Utama
             if (hasImage) ...[
               ClipRRect(
@@ -93,6 +79,21 @@ class ArticleDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 24.0),
             ],
+
+            // Judul Artikel Utama
+            Text(
+              article.title,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1A1A1A),
+                height: 1.3,
+                letterSpacing: -0.5,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
             // Deskripsi Artikel
             Text(
               article.description,

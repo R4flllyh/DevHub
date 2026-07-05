@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/article_model.dart';
 import '../../data/providers/news_api_provider.dart';
 import '../widgets/loading_shimmer.dart';
+import 'article_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,7 +15,6 @@ class _HomePageState extends State<HomePage> {
   final NewsApiProvider _newsApiProvider = NewsApiProvider();
   final ScrollController _scrollController = ScrollController();
 
-  // State manajemen untuk infinite scroll
   final List<ArticleModel> _articles = [];
   int _currentPage = 1;
   bool _isLoading = false;
@@ -24,20 +24,24 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchArticles(); // Muat data pertama kali
-
-    // Pasang listener pada ScrollController untuk mendeteksi posisi scroll
+    _fetchArticles();
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _scrollController
-        .dispose(); // Wajib di-dispose untuk menghindari kebocoran memori
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // Fungsi untuk mengambil data berdasarkan halaman (page)
+  // Helper untuk mengecek apakah artikel memiliki cover image yang valid
+  bool _hasValidCover(String? url) {
+    if (url == null || url.isEmpty || url == 'null') return false;
+    // Mengantisipasi jika API mengirimkan aset gambar placeholder kosong
+    if (url.contains('no-image') || url.contains('placeholder')) return false;
+    return true;
+  }
+
   Future<void> _fetchArticles() async {
     if (_isLoading || !_hasMore) return;
 
@@ -47,18 +51,18 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      // API Provider Anda harus mendukung parameter halaman, misalnya: getLatestArticles(page: _currentPage)
-      // Jika API Anda belum mendukung, sesuaikan method getLatestArticles Anda terlebih dahulu.
       final List<ArticleModel> newArticles = await _newsApiProvider
           .getLatestArticles(page: _currentPage);
 
       setState(() {
         _isLoading = false;
         if (newArticles.isEmpty) {
-          _hasMore = false; // Jika data kosong, berarti sudah habis
+          _hasMore = false;
         } else {
-          _currentPage++; // Naikkan halaman untuk fetch berikutnya
-          _articles.addAll(newArticles); // Gabungkan data lama dengan data baru
+          _currentPage++;
+          _articles.addAll(
+            newArticles,
+          ); // Kita simpan semua data, filternya di tingkat UI
         }
       });
     } catch (e) {
@@ -69,7 +73,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Deteksi jika user sudah scroll mendekati bawah (trigger 200 piksel sebelum mentok)
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
@@ -96,7 +99,6 @@ class _HomePageState extends State<HomePage> {
         centerTitle: false,
       ),
       backgroundColor: Colors.white,
-      // Mengganti FutureBuilder dengan kondisi State konvensional
       body: _articles.isEmpty && _isLoading
           ? const LoadingShimmer()
           : _errorMessage != null && _articles.isEmpty
@@ -110,147 +112,178 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             )
-          : ListView.builder(
-              controller: _scrollController, // Pasang ScrollController di sini
-              // Tambah item count + 1 jika masih ada data atau sedang loading untuk menampilkan indikator di bawah
-              itemCount: _articles.length + (_hasMore ? 1 : 0),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 12.0,
-              ),
-              itemBuilder: (context, index) {
-                // Jika index sama dengan panjang list artikel, berarti ini baris paling bawah
-                if (index == _articles.length) {
-                  if (_errorMessage != null) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+          : RefreshIndicator(
+              color: const Color(0xFF1A1A1A),
+              backgroundColor: Colors.white,
+              onRefresh: () async {
+                _currentPage = 1;
+                _hasMore = true;
+
+                try {
+                  final List<ArticleModel> refreshedArticles =
+                      await _newsApiProvider.getLatestArticles(
+                        page: _currentPage,
+                      );
+
+                  setState(() {
+                    _articles.clear();
+                    _articles.addAll(refreshedArticles);
+                    _currentPage++;
+                  });
+                } catch (e) {
+                  setState(() {
+                    _errorMessage = e.toString();
+                  });
+                }
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: _articles.length + (_hasMore ? 1 : 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 12.0,
+                ),
+                itemBuilder: (context, index) {
+                  if (index == _articles.length) {
+                    if (_errorMessage != null) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: TextButton(
+                            onPressed: _fetchArticles,
+                            child: const Text(
+                              'Tap to retry',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24.0),
                       child: Center(
-                        child: TextButton(
-                          onPressed: _fetchArticles,
-                          child: const Text(
-                            'Tap to retry',
-                            style: TextStyle(color: Colors.grey),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF1A1A1A),
+                            strokeWidth: 2,
                           ),
                         ),
                       ),
                     );
                   }
-                  // Tampilkan loading kecil di bawah saat memuat halaman berikutnya
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24.0),
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF1A1A1A),
-                          strokeWidth: 2,
-                        ),
+
+                  final article = _articles[index];
+                  final bool dynamicHasImage = _hasValidCover(
+                    article.coverImage,
+                  );
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 32.0),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ArticleDetailPage(article: article),
+                          ),
+                        );
+                      },
+                      splashColor: Colors.grey[100],
+                      highlightColor: Colors.transparent,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 1. Metadata Penulis
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 10,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage: NetworkImage(
+                                  article.authorProfileImage,
+                                ),
+                              ),
+                              const SizedBox(width: 8.0),
+                              Text(
+                                article.authorName,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF555555),
+                                ),
+                              ),
+                              const SizedBox(width: 6.0),
+                              const Text(
+                                '•',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 6.0),
+                              Text(
+                                article.publishedAt,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10.0),
+
+                          // 2. Kondisional Rendering Gambar Utama
+                          if (dynamicHasImage) ...[
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.network(
+                                article.coverImage,
+                                height: 200,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const SizedBox.shrink(); // Sembunyikan jika network gagal
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 12.0),
+                          ],
+
+                          // 3. Judul Artikel (Langsung merapat ke atas jika tidak ada gambar)
+                          Text(
+                            article.title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A1A1A),
+                              height: 1.3,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6.0),
+
+                          // 4. Deskripsi Artikel
+                          Text(
+                            article.description,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   );
-                }
-
-                final article = _articles[index];
-
-                // UI Card Minimalis Anda tetap sama
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 32.0),
-                  child: InkWell(
-                    onTap: () {},
-                    splashColor: Colors.grey[100],
-                    highlightColor: Colors.transparent,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 10,
-                              backgroundColor: Colors.grey[200],
-                              backgroundImage: NetworkImage(
-                                article.authorProfileImage,
-                              ),
-                            ),
-                            const SizedBox(width: 8.0),
-                            Text(
-                              article.authorName,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF555555),
-                              ),
-                            ),
-                            const SizedBox(width: 6.0),
-                            const Text(
-                              '•',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(width: 6.0),
-                            Text(
-                              article.publishedAt,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10.0),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: Image.network(
-                            article.coverImage,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 200,
-                                color: const Color(0xFFF5F5F5),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    color: Colors.grey,
-                                    size: 28,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12.0),
-                        Text(
-                          article.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
-                            height: 1.3,
-                            letterSpacing: -0.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6.0),
-                        Text(
-                          article.description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            height: 1.4,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                },
+              ),
             ),
     );
   }

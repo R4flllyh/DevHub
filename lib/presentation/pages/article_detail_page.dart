@@ -123,6 +123,36 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             ),
             const SizedBox(height: 20.0),
 
+            if (widget.article.tags.isNotEmpty) ...[
+              Wrap(
+                spacing: 8.0, // Jarak antar tag secara horizontal
+                runSpacing: 4.0, // Jarak antar baris tag jika melipat ke bawah
+                children: widget.article.tags.map((tag) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 6.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(
+                        0xFFF5F5F5,
+                      ), // Latar abu-abu minimalis premium
+                      borderRadius: BorderRadius.circular(6.0),
+                    ),
+                    child: Text(
+                      '#$tag', // Menambahkan simbol hashtag otomatis
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20.0),
+            ],
+
             // 3. Kondisional Rendering Cover Image (Tampil Instan jika ada)
             if (hasImage) ...[
               ClipRRect(
@@ -130,6 +160,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 child: Image.network(
                   widget.article.coverImage,
                   width: double.infinity,
+                  height: 200,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
                       const SizedBox.shrink(),

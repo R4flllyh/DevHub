@@ -29,4 +29,26 @@ class NewsApiProvider {
       throw Exception('Failed to Connect to the Server: $e');
     }
   }
+
+  // New Method to GET Full Detail Article
+  Future<String> getArticleContent(int id) async {
+    try {
+      // hit detail endpoint
+      final response = await http.get(Uri.parse('$_baseUrl/articles/$id'));
+
+      if (response.statusCode == 200) {
+        // Karena detail hanya mengembalikan 1 objek (bukan List), kita gunakan Map
+        final Map<String, dynamic> decodedData = jsonDecode(response.body);
+
+        // Ambil data 'body_markdown' langsung dari JSON nya
+        return decodedData['body_markdown'] ?? 'No Content Available';
+      } else {
+        throw Exception(
+          'Failed to load article content (Status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to Connect to the Server');
+    }
+  }
 }

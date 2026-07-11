@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/article_model.dart';
+import '../../models/article_model.dart';
 
-class NewsApiProvider {
+class NewsRemoteDataSource {
   // Base URL murni tanpa slash di ujung agar penggabungan URL konsisten
   final String _baseUrl = 'https://dev.to/api';
 

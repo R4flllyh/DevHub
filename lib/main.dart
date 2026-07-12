@@ -1,3 +1,5 @@
+import 'package:dev_news/domain/usecases/get_article_comments.dart';
+import 'package:dev_news/presentation/blocs/article_comment/article_comment_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -29,10 +31,15 @@ void main() {
     articleRepository,
   );
 
+  final GetArticleComments getArticleComments = GetArticleComments(
+    articleRepository,
+  );
+
   runApp(
     MyApp(
       getLatestArticles: getLatestArticles,
       getArticleContent: getArticleContent,
+      getArticleComments: getArticleComments,
     ),
   );
 }
@@ -40,11 +47,13 @@ void main() {
 class MyApp extends StatelessWidget {
   final GetLatestArticles getLatestArticles;
   final GetArticleContent getArticleContent;
+  final GetArticleComments getArticleComments;
 
   const MyApp({
     super.key,
     required this.getLatestArticles,
     required this.getArticleContent,
+    required this.getArticleComments,
   });
 
   @override
@@ -59,6 +68,10 @@ class MyApp extends StatelessWidget {
         BlocProvider<ArticleDetailBloc>(
           create: (context) =>
               ArticleDetailBloc(getArticleContent: getArticleContent),
+        ),
+        BlocProvider<ArticleCommentBloc>(
+          create: (context) =>
+              ArticleCommentBloc(getArticleComments: getArticleComments),
         ),
       ],
       child: MaterialApp(

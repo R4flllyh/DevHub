@@ -51,4 +51,23 @@ class NewsRemoteDataSource {
       throw Exception('Failed to Connect to the Server');
     }
   }
+
+  // Method for GET data comments
+  Future<List<dynamic>> getArticleComments(int articleId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/comments?a_id=$articleId'),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List<dynamic>;
+      } else {
+        throw Exception(
+          'Failed to load Comment (status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to Connect to the server');
+    }
+  }
 }

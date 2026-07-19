@@ -1,4 +1,6 @@
 import 'package:dev_news/domain/entities/comment_entity.dart';
+import 'package:dev_news/presentation/widgets/comment_bottom_sheet.dart';
+import 'package:dev_news/presentation/widgets/comment_item_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -53,6 +55,28 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (modalContext) {
+                  return BlocProvider.value(
+                    value: context.read<ArticleCommentBloc>(),
+                    child: const CommentBottomSheet(),
+                  );
+                },
+              );
+            },
+            icon: const Icon(
+              Icons.mode_comment_outlined,
+              color: Color(0xFF1A1A1A),
+              size: 22,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -261,223 +285,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               },
             ),
             const SizedBox(height: 40.0),
-            const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
-            const SizedBox(height: 24.0),
-
-            const Text(
-              'Discussion',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 5. Area Seksi Komentar Reaktif
-            BlocBuilder<ArticleCommentBloc, ArticleCommentState>(
-              builder: (context, commentState) {
-                if (commentState is ArticleCommentLoading) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF1A1A1A),
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  );
-                }
-
-                if (commentState is ArticleCommentError) {
-                  return Text(
-                    'Gagal Memuat komentar: ${commentState.message}',
-                    style: const TextStyle(fontSize: 13, color: Colors.red),
-                  );
-                }
-
-                if (commentState is ArticleCommentLoaded) {
-                  if (commentState.comments.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                        'Belum ada komentar. Jadilah yang pertama berdiskusi!',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: commentState.comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = commentState.comments[index];
-                      // 💡 PERBAIKAN: Bersihkan parameter pemanggilan widget agar bersih & parsing diserahkan ke komponen dalam
-                      return CommentItemWidget(comment: comment);
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
           ],
         ),
       ),
-    );
-  }
-}
-
-// 💡 REFAKTOR KOMPONEN: Implementasi Rekursif untuk Nested Comments
-class CommentItemWidget extends StatefulWidget {
-  final CommentEntity comment;
-  final bool isReply;
-
-  const CommentItemWidget({
-    super.key,
-    required this.comment,
-    this.isReply = false,
-  });
-
-  @override
-  State<CommentItemWidget> createState() => _CommentItemWidgetState();
-}
-
-class _CommentItemWidgetState extends State<CommentItemWidget> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    // Pembersihan teks dipusatkan di dalam komponen item secara mandiri
-    final String cleanedContent = widget.comment.bodyHtml
-        .replaceAll(RegExp(r'{%\s*[\s\S]*?%}'), '')
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: EdgeInsets.only(
-            bottom: 12,
-            left: widget.isReply
-                ? 24.0
-                : 0.0, // 💡 Geser ke kanan jika berupa balasan
-          ),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: widget.isReply
-                ? const Color(0xFFFDFDFD)
-                : const Color(0xFFF9F9F9),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF0F0F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Profil Komentar
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(
-                      widget.comment.userProfileImage,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    widget.comment.userName,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Konten Komentar dengan Batasan Baris Dinamis
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final textPainter = TextPainter(
-                    text: TextSpan(
-                      text: cleanedContent,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.5,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    maxLines: 3,
-                    textDirection: TextDirection.ltr,
-                  )..layout(maxWidth: constraints.maxWidth);
-
-                  final bool isTextOverflowing = textPainter.didExceedMaxLines;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_isExpanded || !isTextOverflowing)
-                        MarkdownBody(
-                          data: cleanedContent,
-                          styleSheet: MarkdownStyleSheet(
-                            p: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[800],
-                              height: 1.5,
-                            ),
-                          ),
-                        )
-                      else
-                        Text(
-                          cleanedContent,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[800],
-                            height: 1.5,
-                          ),
-                        ),
-
-                      if (isTextOverflowing) ...[
-                        const SizedBox(height: 8.0),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isExpanded = !_isExpanded;
-                            });
-                          },
-                          child: Text(
-                            _isExpanded ? 'Show less' : 'Read more',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1A1A),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-
-        // 💡 MAGIC REKURSION: Gambar anak balasan secara otomatis jika data children tersedia
-        if (widget.comment.children.isNotEmpty)
-          ...widget.comment.children.map((childComment) {
-            return CommentItemWidget(
-              comment: childComment,
-              isReply: true, // Indikasi pergeseran layout ke dalam
-            );
-          }).toList(),
-      ],
     );
   }
 }

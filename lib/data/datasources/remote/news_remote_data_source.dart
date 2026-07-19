@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/article_model.dart';
+import '../../models/article_model.dart';
 
-class NewsApiProvider {
+class NewsRemoteDataSource {
   // Base URL murni tanpa slash di ujung agar penggabungan URL konsisten
   final String _baseUrl = 'https://dev.to/api';
 
@@ -49,6 +49,25 @@ class NewsApiProvider {
       }
     } catch (e) {
       throw Exception('Failed to Connect to the Server');
+    }
+  }
+
+  // Method for GET data comments
+  Future<List<dynamic>> getArticleComments(int articleId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/comments?a_id=$articleId'),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List<dynamic>;
+      } else {
+        throw Exception(
+          'Failed to load Comment (status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to Connect to the server');
     }
   }
 }

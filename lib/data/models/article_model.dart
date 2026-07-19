@@ -1,24 +1,16 @@
-class ArticleModel {
-  final int id;
-  final String title;
-  final String description;
-  final String url;
-  final String coverImage;
-  final String publishedAt;
-  final String authorName;
-  final String authorProfileImage;
-  final List<String> tags;
+import '../../domain/entities/article_entity.dart';
 
-  ArticleModel({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.url,
-    required this.coverImage,
-    required this.publishedAt,
-    required this.authorName,
-    required this.authorProfileImage,
-    required this.tags,
+class ArticleModel extends ArticleEntity {
+  const ArticleModel({
+    required super.id,
+    required super.title,
+    required super.description,
+    required super.url,
+    required super.coverImage,
+    required super.publishedAt,
+    required super.authorName,
+    required super.authorProfileImage,
+    required super.tags,
   });
 
   // Factory constructor to create an ArticleModel from JSON data
@@ -34,7 +26,7 @@ class ArticleModel {
       title: json['title'] ?? 'No Title',
       description: json['description'] ?? '',
       url: json['url'] ?? '',
-      coverImage: json['cover_image'] ?? '',
+      coverImage: json['cover_image'] ?? json['social_iamge'] ?? '',
       publishedAt: json['readable_publish_date'] ?? '',
       authorName: json['user']?['name'] ?? 'Anonymous',
       authorProfileImage:
@@ -43,5 +35,18 @@ class ArticleModel {
 
       tags: parsedTags,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'url': url,
+      'cover_image': coverImage,
+      'readable_publish_date': publishedAt,
+      'user': {'name': authorName, 'profile_image_90': authorProfileImage},
+      'tag_list': tags,
+    };
   }
 }

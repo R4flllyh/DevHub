@@ -6,6 +6,7 @@ class CommentEntity extends Equatable {
   final String createdAt;
   final String userName;
   final String userProfileImage;
+  final List<CommentEntity> children;
 
   const CommentEntity({
     required this.id,
@@ -13,6 +14,7 @@ class CommentEntity extends Equatable {
     required this.createdAt,
     required this.userName,
     required this.userProfileImage,
+    required this.children,
   });
 
   @override
@@ -22,5 +24,6 @@ class CommentEntity extends Equatable {
     createdAt,
     userName,
     userProfileImage,
+    children,
   ];
 }

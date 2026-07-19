@@ -1,3 +1,6 @@
+import 'package:dev_news/domain/entities/comment_entity.dart';
+import 'package:dev_news/presentation/widgets/comment_bottom_sheet.dart';
+import 'package:dev_news/presentation/widgets/comment_item_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -11,7 +14,6 @@ import 'package:dev_news/presentation/blocs/article_comment/article_comment_even
 import 'package:dev_news/presentation/blocs/article_comment/article_comment_state.dart';
 
 class ArticleDetailPage extends StatefulWidget {
-  // 💡 PERBAIKAN: Menggunakan ArticleEntity, bukan ArticleModel lagi
   final ArticleEntity article;
 
   const ArticleDetailPage({super.key, required this.article});
@@ -20,144 +22,10 @@ class ArticleDetailPage extends StatefulWidget {
   State<ArticleDetailPage> createState() => _ArticleDetailPageState();
 }
 
-class CommentItemWidget extends StatefulWidget {
-  final String content;
-  final String userName;
-  final String userProfileImage;
-
-  const CommentItemWidget({
-    super.key,
-    required this.content,
-    required this.userName,
-    required this.userProfileImage,
-  });
-
-  @override
-  State<CommentItemWidget> createState() => _CommentItemWidgetState();
-}
-
-class _CommentItemWidgetState extends State<CommentItemWidget> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    // 💡 OPTIMASI: Trim teks untuk membuang spasi kosong atau enter tidak berguna di ujung data
-    final String cleanedContent = widget.content.trim();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Profil
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.grey[200],
-                backgroundImage: NetworkImage(widget.userProfileImage),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                widget.userName,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Konten Komentar dengan Batasan Baris Dinamis
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Mengukur secara presisi batas 3 baris berdasarkan lebar layout HP
-              final textPainter = TextPainter(
-                text: TextSpan(
-                  text: cleanedContent,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: Colors.grey[800],
-                  ),
-                ),
-                maxLines: 3,
-                textDirection: TextDirection.ltr,
-              )..layout(maxWidth: constraints.maxWidth);
-
-              // 💡 EVALUASI MUTLAK: true jika teks > 3 baris, false jika teks pendek
-              final bool isTextOverflowing = textPainter.didExceedMaxLines;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_isExpanded || !isTextOverflowing)
-                    // Jika teksnya pendek (isTextOverflowing == false) atau user klik expand, tampilkan full Markdown
-                    MarkdownBody(
-                      data: cleanedContent,
-                      styleSheet: MarkdownStyleSheet(
-                        p: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[800],
-                          height: 1.5,
-                        ),
-                      ),
-                    )
-                  else
-                    // Jika teks panjang dan belum di-expand, potong dengan Ellipsis (...)
-                    Text(
-                      cleanedContent,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[800],
-                        height: 1.5,
-                      ),
-                    ),
-
-                  // 💡 KUNCI JAWABAN: Tombol ini HANYA akan masuk ke dalam pohon widget jika isTextOverflowing bernilai TRUE
-                  if (isTextOverflowing) ...[
-                    const SizedBox(height: 8.0),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isExpanded = !_isExpanded;
-                        });
-                      },
-                      child: Text(
-                        _isExpanded ? 'Show less' : 'Read more',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ArticleDetailPageState extends State<ArticleDetailPage> {
   @override
   void initState() {
     super.initState();
-    // 💡 TRICK BLOC: Memicu pengambilan detail konten Markdown via BLoC
     context.read<ArticleDetailBloc>().add(
       FetchArticleDetail(widget.article.id),
     );
@@ -187,13 +55,35 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (modalContext) {
+                  return BlocProvider.value(
+                    value: context.read<ArticleCommentBloc>(),
+                    child: const CommentBottomSheet(),
+                  );
+                },
+              );
+            },
+            icon: const Icon(
+              Icons.mode_comment_outlined,
+              color: Color(0xFF1A1A1A),
+              size: 22,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Metadata Penulis & Tanggal (Tampil Instan tanpa nunggu API)
+            // 1. Metadata Penulis & Tanggal
             Row(
               children: [
                 CircleAvatar(
@@ -226,7 +116,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             ),
             const SizedBox(height: 24.0),
 
-            // 2. Judul Artikel Utama (Tampil Instan)
+            // 2. Judul Artikel Utama
             Text(
               widget.article.title,
               style: const TextStyle(
@@ -268,7 +158,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               const SizedBox(height: 20.0),
             ],
 
-            // 3. Kondisional Rendering Cover Image (Tampil Instan jika ada)
+            // 3. Kondisional Rendering Cover Image
             if (hasImage) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(12.0),
@@ -283,7 +173,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               const SizedBox(height: 24.0),
             ],
 
-            // 4. Area Konten Utama (Menggunakan BlocBuilder secara Reaktif)
+            // 4. Area Konten Utama
             BlocBuilder<ArticleDetailBloc, ArticleDetailState>(
               builder: (context, state) {
                 if (state is ArticleDetailLoading) {
@@ -334,7 +224,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 }
 
                 if (state is ArticleDetailLoaded) {
-                  // 1. Bersihkan Front Matter YAML
                   final RegExp frontMatterRegex = RegExp(
                     r'^---\s*[\s\S]*?---\s*',
                   );
@@ -343,7 +232,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     '',
                   );
 
-                  // 💡 PERBAIKAN LIQUID TAGS: Hapus baris teks penanda {% ... %} milik Dev.to agar tidak mengotori UI
                   final RegExp liquidTagsRegex = RegExp(r'{%\s*[\s\S]*?%}');
                   cleanedContent = cleanedContent.replaceAll(
                     liquidTagsRegex,
@@ -353,7 +241,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                   return MarkdownBody(
                     data: cleanedContent,
                     selectable: true,
-                    // 💡 PERBAIKAN LINK: Aktifkan fungsi klik untuk membuka browser bawaan HP
                     onTapLink: (text, href, title) async {
                       if (href != null) {
                         final Uri url = Uri.parse(href);
@@ -398,80 +285,6 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               },
             ),
             const SizedBox(height: 40.0),
-            const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
-            const SizedBox(height: 24.0),
-
-            const Text(
-              'Discussion',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: -0.3,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            BlocBuilder<ArticleCommentBloc, ArticleCommentState>(
-              builder: (context, commentState) {
-                if (commentState is ArticleCommentLoading) {
-                  return Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF1A1A1A),
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  );
-                }
-
-                if (commentState is ArticleCommentError) {
-                  return Text(
-                    'Gagal Memuat komentar: ${commentState.message}',
-                    style: TextStyle(fontSize: 13, color: Colors.red),
-                  );
-                }
-
-                if (commentState is ArticleCommentLoaded) {
-                  if (commentState.comments.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                        'Belum ada komentar. Jadilah yang pertama berdiskusi!',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                      ),
-                    );
-                  }
-
-                  final RegExp liquidTagsRegex = RegExp(r'{%\s*[\s\S]*?%}');
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: commentState.comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = commentState.comments[index];
-
-                      final RegExp liquidTagsRegex = RegExp(r'{%\s*[\s\S]*?%}');
-                      final RegExp htmlTagsRegex = RegExp(r'<[^>]*>');
-
-                      String cleanedCommentBody = comment.bodyHtml
-                          .replaceAll(liquidTagsRegex, '')
-                          .replaceAll(htmlTagsRegex, '');
-
-                      return CommentItemWidget(
-                        content: cleanedCommentBody,
-                        userName: comment.userName,
-                        userProfileImage: comment.userProfileImage,
-                      );
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
           ],
         ),
       ),

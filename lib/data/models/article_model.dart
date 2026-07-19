@@ -26,7 +26,7 @@ class ArticleModel extends ArticleEntity {
       title: json['title'] ?? 'No Title',
       description: json['description'] ?? '',
       url: json['url'] ?? '',
-      coverImage: json['cover_image'] ?? '',
+      coverImage: json['cover_image'] ?? json['social_iamge'] ?? '',
       publishedAt: json['readable_publish_date'] ?? '',
       authorName: json['user']?['name'] ?? 'Anonymous',
       authorProfileImage:

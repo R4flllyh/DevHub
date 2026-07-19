@@ -13,11 +13,32 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // 1. deklarasi scrollController bawaan flutter
+  final ScrollController _scrollController = ScrollController();
   @override
   void initState() {
     super.initState();
     // 💡 TRICK BLOC: Pemicu pertama untuk mengambil data dari API saat halaman dibuka
     context.read<ArticleFeedBloc>().add(const FetchArticleFeed());
+
+    // 2. pasang Listener untuk mendeteksi posisi scroll user
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    //3. wajib di dispose agar tidak memicu memory leak
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // cek apakah posisi scroll sudah mendekati atau sudah mentok di bawah layar
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      // picu BLoC untuk mengambil halaman berikutnya
+      context.read<ArticleFeedBloc>().add(FetchArticleFeed());
+    }
   }
 
   @override
@@ -95,11 +116,29 @@ class _HomePageState extends State<HomePage> {
                 context.read<ArticleFeedBloc>().add(const FetchArticleFeed());
               },
               child: ListView.separated(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(24.0),
-                itemCount: articles.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 24.0),
+                itemCount: state.hasReachedMax
+                    ? articles.length
+                    : articles.length + 1,
+                separatorBuilder: (context, index) {
+                  if (!state.hasReachedMax && index == articles.length + 1) {
+                    return const SizedBox.shrink();
+                  }
+                  return const SizedBox(height: 24.0);
+                },
                 itemBuilder: (context, index) {
+                  if (index >= articles.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF1A1A1A),
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    );
+                  }
                   final article = articles[index];
 
                   final bool hasImage =

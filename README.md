@@ -6,29 +6,36 @@
 
 **DevHub** adalah aplikasi _news aggregator_ seluler modern dan minimalis yang dirancang khusus untuk para developer guna memantau tren teknologi terbaru, berita utama, dan wawasan editorial secara _real-time_.
 
-Aplikasi ini dibangun dengan fokus pada performa yang mulus, antarmuka editorial premium bergaya majalah, dan pemisahan kode yang bersih.
+Aplikasi ini dibangun menggunakan prinsip **Clean Architecture** murni untuk memastikan pemisahan tanggung jawab yang ketat, kode yang mudah diuji (_testable_), serta skalabilitas jangka panjang.
 
 ---
 
 ## ✨ Fitur Utama
 
-- **Editorial Feed UI**: Antarmuka bersih, minimalis, dan berfokus penuh pada kenyamanan membaca konten teknis.
-- **Infinite Scroll / Lazy Loading**: Memuat artikel secara dinamis saat pengguna menggulir ke bawah guna menghemat kuota dan memori.
-- **Premium Shimmer Loading**: Menggantikan _spinner/circular indicator_ konvensional dengan efek _skeleton loading_ animasi abu-abu yang bergerak statis meniru bentuk layout artikel asli.
-- **Dev.to API Integration**: Data artikel yang akurat dan selalu diperbarui langsung dari ekosistem developer global.
+- **Editorial Feed UI**: Antarmuka bersih, minimalis, dan berfokus penuh pada kenyamanan membaca konten teknis dengan penanganan render Markdown yang optimal.
+- **Infinite Scroll / Lazy Loading (Pagination)**: Memuat artikel secara dinamis menggunakan `ScrollController` bawaan saat pengguna menggulir ke bawah guna menghemat kuota dan memori, lengkap dengan pencegahan _RangeError overflow_.
+- **Independent Discussion Section**: Fitur komentar artikel yang responsif dan terisolasi per item dengan mekanisme _Expand/Collapse_ ("Read more" / "Show less") otomatis menggunakan `TextPainter`.
+- **Premium Shimmer Loading**: Menggantikan _spinner konvensional_ saat inisialisasi awal dengan efek _skeleton loading_ animasi yang meniru bentuk layout asli.
+- **Dev.to API Integration**: Data artikel yang akurat, pembersihan otomatis dari _Liquid Tags_ bawaan, dan sinkronisasi data langsung dari ekosistem developer global.
 
 ---
 
 ## 🏗️ Arsitektur Proyek
 
-Proyek ini menerapkan **Layered Architecture (Pemisahan Tanggung Jawab)** sebagai fondasi transisi menuju _Clean Architecture murni_:
+Proyek ini sepenuhnya menerapkan **Clean Architecture (Data, Domain, Presentation Layers)** dengan alur ketergantungan satu arah yang ketat (Dependency Inversion):
 
 ```text
 lib/
 ├── data/
-│   ├── models/       # Cetak biru data (ArticleModel) & parsing JSON
-│   └── providers/    # Manajemen koneksi HTTP ke REST API
+│   ├── datasources/  # Sumber data mentah (Remote API HTTP Client)
+│   ├── models/       # Cetak biru data (JSON Parsing & Serialization)
+│   └── repositories/ # Implementasi konkrit dari kontrak repositori domain
+├── domain/
+│   ├── entities/     # Aturan bisnis inti / model data murni Dart
+│   ├── repositories/ # Kontrak interface (abstraksi) untuk layer data
+│   └── usecases/     # Logika bisnis spesifik per fitur aplikasi
 └── presentation/
-    ├── pages/        # Halaman utama aplikasi (UI Screen)
-    └── widgets/      # Komponen UI modular yang dapat digunakan kembali (Shimmer, dll)
+    ├── blocs/        # Manajemen state reaktif menggunakan Flutter BLoC (Feed, Detail, Comment)
+    ├── pages/        # Halaman utama aplikasi (UI Screens)
+    └── widgets/      # Komponen UI modular (Shimmer, CommentItemWidget, dll)
 ```

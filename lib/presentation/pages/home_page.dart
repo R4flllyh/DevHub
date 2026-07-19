@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
                     ? articles.length
                     : articles.length + 1,
                 separatorBuilder: (context, index) {
-                  if (!state.hasReachedMax && index == articles.length + 1) {
+                  if (!state.hasReachedMax && index == articles.length - 1) {
                     return const SizedBox.shrink();
                   }
                   return const SizedBox(height: 24.0);

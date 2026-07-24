@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_comment/article_comment_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_comment/article_comment_state.dart';
 import 'package:dev_news/presentation/widgets/comment_item_widget.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CommentBottomSheet extends StatelessWidget {
   const CommentBottomSheet({super.key});
@@ -74,12 +75,7 @@ class CommentBottomSheet extends StatelessWidget {
                 child: BlocBuilder<ArticleCommentBloc, ArticleCommentState>(
                   builder: (context, commentState) {
                     if (commentState is ArticleCommentLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF1A1A1A),
-                          strokeWidth: 2,
-                        ),
-                      );
+                      return const _CommentShimmerLoading();
                     }
 
                     if (commentState is ArticleCommentError) {
@@ -99,15 +95,7 @@ class CommentBottomSheet extends StatelessWidget {
 
                     if (commentState is ArticleCommentLoaded) {
                       if (commentState.comments.isEmpty) {
-                        return Center(
-                          child: Text(
-                            "Belum Ada Komentar.",
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 14,
-                            ),
-                          ),
-                        );
+                        return _CommentEmptyState();
                       }
 
                       return ListView.separated(
@@ -239,6 +227,124 @@ class CommentBottomSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _CommentShimmerLoading extends StatelessWidget {
+  const _CommentShimmerLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return Shimmer.fromColors(
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        itemBuilder: (context, index) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Shimmer Header Profile
+              Row(
+                children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 100,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Shimmer Text Lines
+              Container(
+                width: double.infinity,
+                height: 12,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: MediaQuery.of(context).size.width * 0.6,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          );
+        },
+        separatorBuilder: (context, index) => const SizedBox(height: 24),
+        itemCount: 4,
+      ),
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[50]!,
+    );
+  }
+}
+
+class _CommentEmptyState extends StatelessWidget {
+  const _CommentEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFF7F7F7),
+              ),
+              child: const Icon(
+                Icons.chat_bubble_outline_outlined,
+                size: 28,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No discussions yet',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Be the first to share your thoughts and start the conversation below',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[500],
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -5,11 +5,13 @@ import 'package:dev_news/domain/entities/comment_entity.dart';
 class CommentItemWidget extends StatefulWidget {
   final CommentEntity comment;
   final bool isReply;
+  final ValueChanged<String>? onReply;
 
   const CommentItemWidget({
     super.key,
     required this.comment,
     this.isReply = false,
+    this.onReply,
   });
 
   @override
@@ -128,27 +130,52 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Pojok Kiri Bawah: Tombol Read More (Hanya muncul jika teks panjang)
-                                if (isTextOverflowing)
-                                  GestureDetector(
-                                    onTap: () => setState(
-                                      () => _isExpanded = !_isExpanded,
-                                    ),
-                                    child: Text(
-                                      _isExpanded ? 'Show less' : 'Read more',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight
-                                            .w700, // Cukup gunakan ketebalan font
-                                        color: Color(
-                                          0xFF1A1A1A,
-                                        ), // Hitam solid yang kontras dengan teks abu-abu di atasnya
-                                        letterSpacing: -0.1,
+                                Row(
+                                  children: [
+                                    // 1. Read More / Show Less (Hanya muncul jika teks panjang)
+                                    if (isTextOverflowing) ...[
+                                      GestureDetector(
+                                        onTap: () => setState(
+                                          () => _isExpanded = !_isExpanded,
+                                        ),
+                                        child: Text(
+                                          _isExpanded
+                                              ? 'Show less'
+                                              : 'Read more',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF1A1A1A),
+                                            letterSpacing: -0.1,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        width: 12.0,
+                                      ), // Spasi antara Read More dan Reply
+                                    ],
+
+                                    // 2. Tombol Reply (Selalu muncul di setiap komentar)
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (widget.onReply != null) {
+                                          widget.onReply!(
+                                            widget.comment.userName,
+                                          );
+                                        }
+                                      },
+                                      child: const Text(
+                                        'Reply',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF666666),
+                                          letterSpacing: -0.1,
+                                        ),
                                       ),
                                     ),
-                                  )
-                                else
-                                  const SizedBox.shrink(), // Spacer kosong penyeimbang layout
+                                  ],
+                                ),
                                 // Pojok Kanan Bawah: Tombol Replies
                                 if (repliesCount > 0)
                                   GestureDetector(

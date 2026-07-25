@@ -1,6 +1,7 @@
 import 'package:dev_news/domain/entities/comment_entity.dart';
 import 'package:dev_news/presentation/widgets/comment_bottom_sheet.dart';
 import 'package:dev_news/presentation/widgets/comment_item_widget.dart';
+import 'package:dev_news/presentation/widgets/interactive_image_viewer.dart';
 import 'package:dev_news/presentation/widgets/vscode_code_block.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:dev_news/domain/entities/article_entity.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_event.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_state.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dev_news/presentation/blocs/article_comment/article_comment_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_comment/article_comment_event.dart';
@@ -200,16 +202,53 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
               const SizedBox(height: 20.0),
             ],
 
-            // 3. Kondisional Rendering Cover Image
+            // 3. Kondisional Rendering Cover Image (Interactive Zoom)
             if (hasImage) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12.0),
-                child: Image.network(
+              GestureDetector(
+                onTap: () => InteractiveImageViewer.show(
+                  context,
                   widget.article.coverImage,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox.shrink(),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Image.network(
+                        widget.article.coverImage,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const SizedBox.shrink(),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Shimmer.fromColors(
+                            baseColor: Colors.grey[200]!,
+                            highlightColor: Colors.grey[50]!,
+                            child: Container(
+                              height: 200.0,
+                              width: double.infinity,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                      ),
+                      // Indikator Zoom
+                      Container(
+                        margin: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(6.0),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(6.0),
+                        ),
+                        child: const Icon(
+                          Icons.zoom_in_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24.0),
@@ -284,6 +323,71 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     data: cleanedContent,
                     selectable: true,
                     builders: {'pre': VsCodeCodeBlockBuilder()},
+                    // 💡 HANDLER RENDERING GAMBAR DENGAN FITUR POPUP ZOOM
+                    imageBuilder: (uri, title, alt) {
+                      final String imageUrl = uri.toString();
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: GestureDetector(
+                          // 💡 TAP GAMBAR UNTUK BUKA POPUP INTERAKTIF
+                          onTap: () =>
+                              InteractiveImageViewer.show(context, imageUrl),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                maxHeight:
+                                    300.0, // Batas tinggi normal saat berada di dalam artikel
+                              ),
+                              child: Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  // Render Gambar
+                                  Image.network(
+                                    imageUrl,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const SizedBox.shrink(),
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Shimmer.fromColors(
+                                            baseColor: Colors.grey[200]!,
+                                            highlightColor: Colors.grey[50]!,
+                                            child: Container(
+                                              height: 180.0,
+                                              width: double.infinity,
+                                              color: Colors.white,
+                                            ),
+                                          );
+                                        },
+                                  ),
+
+                                  // 💡 INDIKATOR VISUAL BAHWA GAMBAR BISA DI-TAP/ZOOM
+                                  Container(
+                                    margin: const EdgeInsets.all(8.0),
+                                    padding: const EdgeInsets.all(6.0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(6.0),
+                                    ),
+                                    child: const Icon(
+                                      Icons.zoom_in_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                     styleSheet: MarkdownStyleSheet(
                       // 💡 1. MATIKAN DEKORASI BONGKAH KODE BAWAAN
                       codeblockDecoration: const BoxDecoration(

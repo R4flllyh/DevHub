@@ -15,11 +15,14 @@ class CommentBottomSheet extends StatefulWidget {
 class _CommentBottomSheetState extends State<CommentBottomSheet> {
   String? _replyingToUser;
   final TextEditingController _commentController = TextEditingController();
+  final FocusNode _inputFocusNode = FocusNode();
 
   void _setReplyUser(String username) {
     setState(() {
       _replyingToUser = username;
     });
+    // Auto focus ke textfield saat reply diklik
+    FocusScope.of(context).requestFocus(_inputFocusNode);
   }
 
   void _clearReplyUser() {
@@ -243,6 +246,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                     ),
                                     child: TextField(
                                       controller: _commentController,
+                                      focusNode: _inputFocusNode,
                                       maxLines: null,
                                       keyboardType: TextInputType.multiline,
                                       style: const TextStyle(

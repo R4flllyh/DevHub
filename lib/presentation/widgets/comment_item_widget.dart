@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:dev_news/domain/entities/comment_entity.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CommentItemWidget extends StatefulWidget {
   final CommentEntity comment;
@@ -104,6 +105,17 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                             if (_isExpanded || !isTextOverflowing)
                               MarkdownBody(
                                 data: cleanedContent,
+                                onTapLink: (text, href, title) async {
+                                  if (href != null) {
+                                    final Uri url = Uri.parse(href);
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(
+                                        url,
+                                        mode: LaunchMode.externalApplication,
+                                      );
+                                    }
+                                  }
+                                },
                                 styleSheet: MarkdownStyleSheet(
                                   p: const TextStyle(
                                     fontSize: 14,

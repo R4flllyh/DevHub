@@ -323,6 +323,15 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     data: cleanedContent,
                     selectable: true,
                     builders: {'pre': VsCodeCodeBlockBuilder()},
+                    // handle link on the body
+                    onTapLink: (text, href, title) async {
+                      if (href != null) {
+                        final Uri url = Uri.parse(href);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.inAppWebView);
+                        }
+                      }
+                    },
                     // 💡 HANDLER RENDERING GAMBAR DENGAN FITUR POPUP ZOOM
                     imageBuilder: (uri, title, alt) {
                       final String imageUrl = uri.toString();

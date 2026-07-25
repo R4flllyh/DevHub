@@ -24,6 +24,12 @@ class ArticleDetailPage extends StatefulWidget {
 
 class _ArticleDetailPageState extends State<ArticleDetailPage> {
   @override
+  void dispose() {
+    context.read<ArticleCommentBloc>().add(ResetArticleComment());
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     context.read<ArticleDetailBloc>().add(

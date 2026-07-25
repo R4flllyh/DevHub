@@ -11,6 +11,9 @@ class ArticleCommentBloc
   ArticleCommentBloc({required this.getArticleComments})
     : super(ArticleCommentInitial()) {
     on<FetchArticleComments>(_onFetchArticleComments);
+    on<ResetArticleComment>((event, emit) {
+      emit(ArticleCommentInitial());
+    });
   }
 
   Future<void> _onFetchArticleComments(

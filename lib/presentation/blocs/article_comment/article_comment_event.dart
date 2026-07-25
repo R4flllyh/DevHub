@@ -17,3 +17,5 @@ class FetchArticleComments extends ArticleCommentEvent {
   // TODO: implement props
   List<Object?> get props => [articleId];
 }
+
+class ResetArticleComment extends ArticleCommentEvent {}

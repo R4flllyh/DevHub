@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:dev_news/domain/entities/comment_entity.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CommentItemWidget extends StatefulWidget {
@@ -115,6 +116,55 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                                       );
                                     }
                                   }
+                                },
+                                imageBuilder: (uri, title, alt) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        constraints: const BoxConstraints(
+                                          maxHeight: 250,
+                                        ),
+                                        child: Image.network(
+                                          uri.toString(),
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return const SizedBox.shrink();
+                                              },
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null)
+                                                  return child;
+                                                return Shimmer.fromColors(
+                                                  child: Container(
+                                                    height: 150,
+                                                    width: double.infinity,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  baseColor: Colors.grey[500]!,
+                                                  highlightColor:
+                                                      Colors.grey[50]!,
+                                                );
+                                              },
+                                        ),
+                                      ),
+                                    ),
+                                  );
                                 },
                                 styleSheet: MarkdownStyleSheet(
                                   p: const TextStyle(

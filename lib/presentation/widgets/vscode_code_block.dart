@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_highlighter/flutter_highlighter.dart';
 import 'package:flutter_highlighter/theme_map.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -81,6 +82,42 @@ class VsCodeCodeBlockBuilder extends MarkdownElementBuilder {
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Copy Button
+                  Builder(
+                    builder: (context) {
+                      return InkWell(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: codeContent));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Code copied to clipboard!'),
+                              duration: Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.copy_rounded,
+                              color: Color(0xFF858585),
+                              size: 14,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Copy',
+                              style: TextStyle(
+                                color: Color(0xFF858585),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

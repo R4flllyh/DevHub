@@ -56,26 +56,67 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (modalContext) {
-                  return BlocProvider.value(
-                    value: context.read<ArticleCommentBloc>(),
-                    child: const CommentBottomSheet(),
-                  );
-                },
+          BlocBuilder<ArticleCommentBloc, ArticleCommentState>(
+            builder: (context, commentState) {
+              int commentCount = 0;
+              if (commentState is ArticleCommentLoaded) {
+                commentCount = commentState.comments.length;
+              }
+              return Stack(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (modalContext) {
+                          return BlocProvider.value(
+                            value: context.read<ArticleCommentBloc>(),
+                            child: const CommentBottomSheet(),
+                          );
+                        },
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.mode_comment_outlined,
+                      color: Color(0xFF1A1A1A),
+                      size: 22,
+                    ),
+                  ),
+
+                  // Badge Counter
+                  if (commentCount > 0)
+                    Positioned(
+                      top: 10,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1A1A1A),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$commentCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
-            icon: const Icon(
-              Icons.mode_comment_outlined,
-              color: Color(0xFF1A1A1A),
-              size: 22,
-            ),
           ),
+          const SizedBox(width: 12),
         ],
       ),
       body: SingleChildScrollView(

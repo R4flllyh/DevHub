@@ -347,8 +347,22 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     onTapLink: (text, href, title) async {
                       if (href != null) {
                         final Uri url = Uri.parse(href);
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url, mode: LaunchMode.inAppWebView);
+                        try {
+                          // 💡 Gunakan externalApplication agar pasti membuka Chrome / Browser default
+                          bool launched = await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+
+                          // Fallback jika externalApplication gagal
+                          if (!launched) {
+                            await launchUrl(
+                              url,
+                              mode: LaunchMode.platformDefault,
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Error launching url: $e');
                         }
                       }
                     },

@@ -258,7 +258,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                         margin: const EdgeInsets.all(8.0),
                         padding: const EdgeInsets.all(6.0),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(6.0),
                         ),
                         child: const Icon(
@@ -396,8 +396,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                                             const SizedBox.shrink(),
                                     loadingBuilder:
                                         (context, child, loadingProgress) {
-                                          if (loadingProgress == null)
+                                          if (loadingProgress == null) {
                                             return child;
+                                          }
                                           return Shimmer.fromColors(
                                             baseColor: Colors.grey[200]!,
                                             highlightColor: Colors.grey[50]!,
@@ -415,7 +416,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                                     margin: const EdgeInsets.all(8.0),
                                     padding: const EdgeInsets.all(6.0),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       borderRadius: BorderRadius.circular(6.0),
                                     ),
                                     child: const Icon(

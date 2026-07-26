@@ -10,6 +10,7 @@ import 'package:dev_news/domain/entities/article_entity.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_event.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_state.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dev_news/presentation/blocs/article_comment/article_comment_bloc.dart';
@@ -59,6 +60,25 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          //Button Share Article
+          IconButton(
+            icon: const Icon(
+              Icons.share_outlined,
+              color: Color(0xFF1A1A1A),
+              size: 22,
+            ),
+            onPressed: () {
+              final String articleUrl = widget.article.url.isNotEmpty
+                  ? widget.article.url
+                  : 'https://dev.to';
+
+              Share.share(
+                'Check out this article: "${widget.article.title}"\n\n$articleUrl',
+                subject: widget.article.title,
+              );
+            },
+          ),
+          // Button comments
           BlocBuilder<ArticleCommentBloc, ArticleCommentState>(
             builder: (context, commentState) {
               int commentCount = 0;
@@ -323,6 +343,15 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     data: cleanedContent,
                     selectable: true,
                     builders: {'pre': VsCodeCodeBlockBuilder()},
+                    // handle link on the body
+                    onTapLink: (text, href, title) async {
+                      if (href != null) {
+                        final Uri url = Uri.parse(href);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.inAppWebView);
+                        }
+                      }
+                    },
                     // 💡 HANDLER RENDERING GAMBAR DENGAN FITUR POPUP ZOOM
                     imageBuilder: (uri, title, alt) {
                       final String imageUrl = uri.toString();

@@ -7,12 +7,14 @@ abstract class ArticleFeedEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// An event triggered when the main page is first opened or refreshed.
+// Event yang dipanggil saat load feed utama, search query, atau filter tag
 class FetchArticleFeed extends ArticleFeedEvent {
   final int page;
+  final String? query;
+  final String? tag;
 
-  const FetchArticleFeed({this.page = 1});
+  const FetchArticleFeed({this.page = 1, this.query, this.tag});
 
   @override
-  List<Object?> get props => [page];
+  List<Object?> get props => [page, query, tag];
 }

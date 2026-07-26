@@ -98,7 +98,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
 
                     Container(
                       height: 1,
-                      color: const Color(0xFF1A1A1A).withOpacity(0.06),
+                      color: const Color(0xFF1A1A1A).withValues(alpha: 0.06),
                     ),
                   ],
                 ),
@@ -144,7 +144,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                             child: Divider(
                               height: 1,
                               thickness: 1,
-                              color: const Color(0xFF1A1A1A).withOpacity(0.04),
+                              color: const Color(
+                                0xFF1A1A1A,
+                              ).withValues(alpha: 0.04),
                             ),
                           ),
                           itemBuilder: (context, index) {
@@ -172,7 +174,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                       color: Colors.white,
                       border: Border(
                         top: BorderSide(
-                          color: const Color(0xFF1A1A1A).withOpacity(0.06),
+                          color: const Color(
+                            0xFF1A1A1A,
+                          ).withValues(alpha: 0.06),
                           width: 1,
                         ),
                       ),
@@ -311,6 +315,8 @@ class _CommentShimmerLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     // TODO: implement build
     return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[50]!,
       child: ListView.separated(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -365,8 +371,6 @@ class _CommentShimmerLoading extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 24),
         itemCount: 4,
       ),
-      baseColor: Colors.grey[200]!,
-      highlightColor: Colors.grey[50]!,
     );
   }
 }

@@ -10,10 +10,18 @@ class ArticleRepositoryImpl implements ArticleRepository {
   ArticleRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<ArticleEntity>> getLatestArticles({int page = 1}) async {
+  Future<List<ArticleEntity>> getLatestArticles({
+    int page = 1,
+    String? query,
+    String? tag,
+  }) async {
     try {
       // hit data source, automatically acknowledged ArticleModel as ArticleEntity
-      return await remoteDataSource.getLatestArticles(page: page);
+      return await remoteDataSource.getLatestArticles(
+        page: page,
+        query: query,
+        tag: tag,
+      );
     } catch (e) {
       throw Exception(e.toString());
     }

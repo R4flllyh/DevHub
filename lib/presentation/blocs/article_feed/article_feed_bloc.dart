@@ -16,41 +16,56 @@ class ArticleFeedBloc extends Bloc<ArticleFeedEvent, ArticleFeedState> {
     Emitter<ArticleFeedState> emit,
   ) async {
     final currentState = state;
+    final bool isFirstFetch =
+        currentState is! ArticleFeedLoaded || event.page == 1;
 
-    // 1. jika sudah mencapai halaman maksimal, maka jangan lakukan apa-apa
-    if (currentState is ArticleFeedLoaded && currentState.hasReachedMax) return;
+    if (!isFirstFetch &&
+        currentState is ArticleFeedLoaded &&
+        currentState.hasReachedMax) {
+      return;
+    }
 
     try {
-      // 2. Jika baru pertama kali load (initial)
-      if (currentState is! ArticleFeedLoaded) {
+      if (isFirstFetch) {
         emit(ArticleFeedLoading());
-        final articles = await getLatestArticles.execute(page: 1);
+
+        final articles = await getLatestArticles.execute(
+          page: 1,
+          query: event.query,
+          tag: event.tag,
+        );
 
         emit(
           ArticleFeedLoaded(
             articles: articles,
-            hasReachedMax: articles.isEmpty,
+            // 💡 KUNCI FIX: Jika artikel kurang dari 20 (per_page), pasti sudah reached max!
+            hasReachedMax: articles.length < 20,
             currentPage: 1,
           ),
         );
         return;
       }
 
-      // 3. jika ini adalah request halaman berikut nya (lazy load)
-      final nextPage = currentState.currentPage + 1;
-      final newArticles = await getLatestArticles.execute(page: nextPage);
-
-      if (newArticles.isEmpty) {
-        emit(currentState.copyWith(hasReachedMax: true));
-      } else {
-        // Kunci pagination: gabungkan list lama dengan yang baru
-        emit(
-          ArticleFeedLoaded(
-            articles: List.of(currentState.articles)..addAll(newArticles),
-            hasReachedMax: false,
-            currentPage: nextPage,
-          ),
+      if (currentState is ArticleFeedLoaded) {
+        final nextPage = currentState.currentPage + 1;
+        final newArticles = await getLatestArticles.execute(
+          page: nextPage,
+          query: event.query,
+          tag: event.tag,
         );
+
+        if (newArticles.isEmpty) {
+          emit(currentState.copyWith(hasReachedMax: true));
+        } else {
+          emit(
+            ArticleFeedLoaded(
+              articles: List.of(currentState.articles)..addAll(newArticles),
+              // 💡 JIKA HASIL DARI PAGE BERIKUTNYA KURANG DARI 20, JUGA SET TRUE
+              hasReachedMax: newArticles.length < 20,
+              currentPage: nextPage,
+            ),
+          );
+        }
       }
     } catch (e) {
       emit(ArticleFeedError(e.toString()));

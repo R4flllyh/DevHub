@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dev_news/presentation/blocs/article_feed/article_feed_state.dart';
 import 'package:dev_news/presentation/widgets/article_feed_shimmer.dart';
+import 'package:dev_news/presentation/widgets/devhub_refresh_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_feed/article_feed_bloc.dart';
@@ -266,8 +267,7 @@ class _HomePageState extends State<HomePage> {
               return _buildSearchEmptyState(_currentQuery);
             }
 
-            return RefreshIndicator(
-              color: const Color(0xFF1A1A1A),
+            return DevHubRefreshIndicator(
               onRefresh: () async {
                 context.read<ArticleFeedBloc>().add(
                   FetchArticleFeed(page: 1, query: _currentQuery),

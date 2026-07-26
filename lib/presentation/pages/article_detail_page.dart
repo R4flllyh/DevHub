@@ -1,4 +1,5 @@
 import 'package:dev_news/domain/entities/comment_entity.dart';
+import 'package:dev_news/presentation/widgets/article_detail_shimmer.dart';
 import 'package:dev_news/presentation/widgets/comment_bottom_sheet.dart';
 import 'package:dev_news/presentation/widgets/comment_item_widget.dart';
 import 'package:dev_news/presentation/widgets/interactive_image_viewer.dart';
@@ -278,15 +279,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             BlocBuilder<ArticleDetailBloc, ArticleDetailState>(
               builder: (context, state) {
                 if (state is ArticleDetailLoading) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 60.0),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF1A1A1A),
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  );
+                  return const ArticleDetailShimmer();
                 }
 
                 if (state is ArticleDetailError) {

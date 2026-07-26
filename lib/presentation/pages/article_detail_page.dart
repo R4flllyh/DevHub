@@ -28,15 +28,49 @@ class ArticleDetailPage extends StatefulWidget {
 }
 
 class _ArticleDetailPageState extends State<ArticleDetailPage> {
+  final ScrollController _scrollController = ScrollController();
+  double _readingProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
+
+    // Listener untuk menghitung persentase scroll
+    _scrollController.addListener(_updateReadingProgress);
+
     context.read<ArticleDetailBloc>().add(
       FetchArticleDetail(widget.article.id),
     );
     context.read<ArticleCommentBloc>().add(
       FetchArticleComments(widget.article.id),
     );
+  }
+
+  void _updateReadingProgress() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    if (maxScroll > 0) {
+      setState(() {
+        _readingProgress = (currentScroll / maxScroll).clamp(0.0, 1.0);
+      });
+    }
+  }
+
+  int _calculateReadingTime(String text) {
+    final words = text.trim().split(RegExp(r'\s+'));
+    final minutes = (words.length / 200).ceil();
+
+    return minutes < 1 ? 1 : minutes;
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _scrollController.removeListener(_updateReadingProgress);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -142,8 +176,18 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           ),
           const SizedBox(width: 12),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(2.0),
+          child: LinearProgressIndicator(
+            value: _readingProgress,
+            backgroundColor: Colors.grey[200],
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1A1A1A)),
+            minHeight: 2,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,9 +215,22 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 2.0),
-                    Text(
-                      widget.article.publishedAt,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    BlocBuilder<ArticleDetailBloc, ArticleDetailState>(
+                      builder: (context, state) {
+                        String readingTimeText = '';
+                        if (state is ArticleDetailLoaded) {
+                          final minutes = _calculateReadingTime(state.content);
+                          readingTimeText = ' • $minutes min read';
+                        }
+
+                        return Text(
+                          '${widget.article.publishedAt}$readingTimeText',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -1,4 +1,5 @@
 import 'package:dev_news/domain/entities/comment_entity.dart';
+import 'package:dev_news/presentation/widgets/article_detail_shimmer.dart';
 import 'package:dev_news/presentation/widgets/comment_bottom_sheet.dart';
 import 'package:dev_news/presentation/widgets/comment_item_widget.dart';
 import 'package:dev_news/presentation/widgets/interactive_image_viewer.dart';
@@ -27,15 +28,49 @@ class ArticleDetailPage extends StatefulWidget {
 }
 
 class _ArticleDetailPageState extends State<ArticleDetailPage> {
+  final ScrollController _scrollController = ScrollController();
+  double _readingProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
+
+    // Listener untuk menghitung persentase scroll
+    _scrollController.addListener(_updateReadingProgress);
+
     context.read<ArticleDetailBloc>().add(
       FetchArticleDetail(widget.article.id),
     );
     context.read<ArticleCommentBloc>().add(
       FetchArticleComments(widget.article.id),
     );
+  }
+
+  void _updateReadingProgress() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    if (maxScroll > 0) {
+      setState(() {
+        _readingProgress = (currentScroll / maxScroll).clamp(0.0, 1.0);
+      });
+    }
+  }
+
+  int _calculateReadingTime(String text) {
+    final words = text.trim().split(RegExp(r'\s+'));
+    final minutes = (words.length / 200).ceil();
+
+    return minutes < 1 ? 1 : minutes;
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _scrollController.removeListener(_updateReadingProgress);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -141,8 +176,18 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           ),
           const SizedBox(width: 12),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(2.0),
+          child: LinearProgressIndicator(
+            value: _readingProgress,
+            backgroundColor: Colors.grey[200],
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1A1A1A)),
+            minHeight: 2,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,9 +215,22 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 2.0),
-                    Text(
-                      widget.article.publishedAt,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    BlocBuilder<ArticleDetailBloc, ArticleDetailState>(
+                      builder: (context, state) {
+                        String readingTimeText = '';
+                        if (state is ArticleDetailLoaded) {
+                          final minutes = _calculateReadingTime(state.content);
+                          readingTimeText = ' • $minutes min read';
+                        }
+
+                        return Text(
+                          '${widget.article.publishedAt}$readingTimeText',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -258,7 +316,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                         margin: const EdgeInsets.all(8.0),
                         padding: const EdgeInsets.all(6.0),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(6.0),
                         ),
                         child: const Icon(
@@ -278,15 +336,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             BlocBuilder<ArticleDetailBloc, ArticleDetailState>(
               builder: (context, state) {
                 if (state is ArticleDetailLoading) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 60.0),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF1A1A1A),
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  );
+                  return const ArticleDetailShimmer();
                 }
 
                 if (state is ArticleDetailError) {
@@ -347,8 +397,22 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                     onTapLink: (text, href, title) async {
                       if (href != null) {
                         final Uri url = Uri.parse(href);
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url, mode: LaunchMode.inAppWebView);
+                        try {
+                          // 💡 Gunakan externalApplication agar pasti membuka Chrome / Browser default
+                          bool launched = await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+
+                          // Fallback jika externalApplication gagal
+                          if (!launched) {
+                            await launchUrl(
+                              url,
+                              mode: LaunchMode.platformDefault,
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Error launching url: $e');
                         }
                       }
                     },
@@ -382,8 +446,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                                             const SizedBox.shrink(),
                                     loadingBuilder:
                                         (context, child, loadingProgress) {
-                                          if (loadingProgress == null)
+                                          if (loadingProgress == null) {
                                             return child;
+                                          }
                                           return Shimmer.fromColors(
                                             baseColor: Colors.grey[200]!,
                                             highlightColor: Colors.grey[50]!,
@@ -401,7 +466,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                                     margin: const EdgeInsets.all(8.0),
                                     padding: const EdgeInsets.all(6.0),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       borderRadius: BorderRadius.circular(6.0),
                                     ),
                                     child: const Icon(

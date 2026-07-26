@@ -1,8 +1,11 @@
+import 'dart:async';
+
+import 'package:dev_news/presentation/blocs/article_feed/article_feed_state.dart';
+import 'package:dev_news/presentation/widgets/article_feed_shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_feed/article_feed_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_feed/article_feed_event.dart';
-import 'package:dev_news/presentation/blocs/article_feed/article_feed_state.dart';
 import 'article_detail_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -13,32 +16,139 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 1. deklarasi scrollController bawaan flutter
+  Timer? _debounce;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+
+  // State untuk toggle mode search dan menyimpan query aktif
+  bool _isSearching = false;
+  String _currentQuery = '';
+
   @override
   void initState() {
     super.initState();
-    // 💡 TRICK BLOC: Pemicu pertama untuk mengambil data dari API saat halaman dibuka
     context.read<ArticleFeedBloc>().add(const FetchArticleFeed());
-
-    // 2. pasang Listener untuk mendeteksi posisi scroll user
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    //3. wajib di dispose agar tidak memicu memory leak
+    _debounce?.cancel();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // Jeda 700ms agar tidak over-trigger API saat user belum selesai mengetik
+    _debounce = Timer(const Duration(milliseconds: 700), () {
+      setState(() {
+        _currentQuery = query.trim();
+      });
+
+      context.read<ArticleFeedBloc>().add(
+        FetchArticleFeed(page: 1, query: _currentQuery),
+      );
+    });
+  }
+
   void _onScroll() {
-    // cek apakah posisi scroll sudah mendekati atau sudah mentok di bawah layar
+    if (!_scrollController.hasClients) return;
+
+    final state = context.read<ArticleFeedBloc>().state;
+
+    if (state is ArticleFeedLoaded && state.hasReachedMax) return;
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      // picu BLoC untuk mengambil halaman berikutnya
-      context.read<ArticleFeedBloc>().add(FetchArticleFeed());
+      // 💡 PERBAIKAN: Kirim page sebagai -1 atau angka > 1 agar BLoC tahu ini BUKAN first fetch
+      if (state is ArticleFeedLoaded) {
+        context.read<ArticleFeedBloc>().add(
+          FetchArticleFeed(
+            page: state.currentPage + 1, // Explicitly pass next page
+            query: _currentQuery,
+          ),
+        );
+      }
     }
+  }
+
+  // 💡 Widget Custom Empty State (Di dalam State class agar bisa akses Controller)
+  Widget _buildSearchEmptyState(String query) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20.0),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 48,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 20.0),
+            Text(
+              query.isEmpty
+                  ? 'Belum ada artikel saat ini'
+                  : 'Tidak ada hasil untuk "$query"',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              query.isEmpty
+                  ? 'Tarik layar ke bawah untuk memperbarui feed artikel terbaru.'
+                  : 'Coba periksa kembali ejaan kamu atau gunakan kata kunci topik yang lebih umum.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+            ),
+            if (query.isNotEmpty) ...[
+              const SizedBox(height: 24.0),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF1A1A1A)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 12.0,
+                  ),
+                ),
+                onPressed: () {
+                  _searchController.clear();
+                  _onSearchChanged('');
+                },
+                child: const Text(
+                  'Hapus Pencarian',
+                  style: TextStyle(
+                    color: Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -46,28 +156,73 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'DevHub.',
-          style: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
+        title: _isSearching
+            ? Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  onChanged: _onSearchChanged,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Cari artikel, topik, atau keyword...',
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                    border: InputBorder.none,
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Colors.grey,
+                      size: 18,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                  ),
+                ),
+              )
+            : const Text(
+                'DevHub.',
+                style: TextStyle(
+                  color: Color(0xFF1A1A1A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
+              ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isSearching ? Icons.close : Icons.search,
+              color: const Color(0xFF1A1A1A),
+            ),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _currentQuery = '';
+                  context.read<ArticleFeedBloc>().add(
+                    const FetchArticleFeed(page: 1),
+                  );
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
+          ),
+          const SizedBox(width: 8.0),
+        ],
       ),
-      // 💡 BLOC BUILDER: Menggambar UI secara reaktif tergantung State mesin BLoC
       body: BlocBuilder<ArticleFeedBloc, ArticleFeedState>(
         builder: (context, state) {
           if (state is ArticleFeedLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF1A1A1A),
-                strokeWidth: 2,
-              ),
-            );
+            return const ArticleFeedShimmer();
           }
 
           if (state is ArticleFeedError) {
@@ -89,7 +244,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       onPressed: () {
                         context.read<ArticleFeedBloc>().add(
-                          const FetchArticleFeed(),
+                          FetchArticleFeed(page: 1, query: _currentQuery),
                         );
                       },
                       child: const Text(
@@ -106,14 +261,17 @@ class _HomePageState extends State<HomePage> {
           if (state is ArticleFeedLoaded) {
             final articles = state.articles;
 
+            // 💡 PANGGIL EMPTY STATE DISINI
             if (articles.isEmpty) {
-              return const Center(child: Text('Tidak ada artikel saat ini.'));
+              return _buildSearchEmptyState(_currentQuery);
             }
 
             return RefreshIndicator(
               color: const Color(0xFF1A1A1A),
               onRefresh: () async {
-                context.read<ArticleFeedBloc>().add(const FetchArticleFeed());
+                context.read<ArticleFeedBloc>().add(
+                  FetchArticleFeed(page: 1, query: _currentQuery),
+                );
               },
               child: ListView.separated(
                 controller: _scrollController,
@@ -130,7 +288,7 @@ class _HomePageState extends State<HomePage> {
                 itemBuilder: (context, index) {
                   if (index >= articles.length) {
                     return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
                       child: Center(
                         child: CircularProgressIndicator(
                           color: Color(0xFF1A1A1A),
@@ -159,7 +317,6 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Metadata Penulis
                         Row(
                           children: [
                             CircleAvatar(
@@ -188,8 +345,6 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                         const SizedBox(height: 12.0),
-
-                        // Cover Image jika ada
                         if (hasImage) ...[
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12.0),
@@ -202,8 +357,6 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 12.0),
                         ],
-
-                        // Judul Utama
                         Text(
                           article.title,
                           maxLines: 2,
@@ -216,8 +369,6 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         const SizedBox(height: 8.0),
-
-                        // Render Tags Terbatas (Maksimal 3)
                         if (article.tags.isNotEmpty) ...[
                           Wrap(
                             spacing: 6.0,

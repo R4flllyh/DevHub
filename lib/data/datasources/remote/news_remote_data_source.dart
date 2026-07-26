@@ -7,18 +7,36 @@ class NewsRemoteDataSource {
   final String _baseUrl = 'https://dev.to/api';
 
   // Method fetch artikel dengan default page = 1 dan per_page dikunci ke 20
-  Future<List<ArticleModel>> getLatestArticles({int page = 1}) async {
+  Future<List<ArticleModel>> getLatestArticles({
+    int page = 1,
+    String? query,
+    String? tag,
+  }) async {
     try {
-      // Perbaikan 1: Gunakan objek 'http' sesuai alias import Anda
-      // Perbaikan 2: Gabungkan _baseUrl dengan endpoint secara utuh menggunakan String Interpolation
-      final response = await http.get(
-        Uri.parse('$_baseUrl/articles?page=$page&per_page=20'),
-      );
+      final Map<String, String> queryParameters = {
+        'page': page.toString(),
+        'per_page': '20',
+      };
 
-      // Check jika response status code adalah 200 (OK)
+      // 💡 Priority 1: Jika ada tag eksplisit (misal dari TagArticlesPage)
+      if (tag != null && tag.isNotEmpty) {
+        queryParameters['tag'] = tag.toLowerCase().replaceAll(' ', '');
+      }
+      // 💡 Priority 2: Jika user mengetik di Search Bar
+      else if (query != null && query.isNotEmpty) {
+        // Ubah query search user menjadi tag parameter agar DEV.to memfilter artikelnya
+        queryParameters['tag'] = query.toLowerCase().trim().replaceAll(' ', '');
+      }
+
+      final uri = Uri.https('dev.to', '/api/articles', queryParameters);
+
+      // Cek di Debug Console log URL yang dipanggil
+      print('FETCHING URL: $uri');
+
+      final response = await http.get(uri);
+
       if (response.statusCode == 200) {
         final List<dynamic> decodedData = jsonDecode(response.body);
-
         return decodedData.map((json) => ArticleModel.fromJson(json)).toList();
       } else {
         throw Exception(

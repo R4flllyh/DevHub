@@ -45,7 +45,7 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
               Container(
                 width: 1.5,
                 margin: const EdgeInsets.only(right: 16.0, bottom: 8.0),
-                color: const Color(0xFF1A1A1A).withOpacity(0.08),
+                color: const Color(0xFF1A1A1A).withValues(alpha: 0.08),
               ),
             ],
 
@@ -142,9 +142,13 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                                                 child,
                                                 loadingProgress,
                                               ) {
-                                                if (loadingProgress == null)
+                                                if (loadingProgress == null) {
                                                   return child;
+                                                }
                                                 return Shimmer.fromColors(
+                                                  baseColor: Colors.grey[500]!,
+                                                  highlightColor:
+                                                      Colors.grey[50]!,
                                                   child: Container(
                                                     height: 150,
                                                     width: double.infinity,
@@ -156,9 +160,6 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                                                           ),
                                                     ),
                                                   ),
-                                                  baseColor: Colors.grey[500]!,
-                                                  highlightColor:
-                                                      Colors.grey[50]!,
                                                 );
                                               },
                                         ),

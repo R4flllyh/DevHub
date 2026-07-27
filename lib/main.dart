@@ -15,8 +15,18 @@ import 'package:dev_news/domain/usecases/get_article_content.dart';
 import 'package:dev_news/presentation/blocs/article_feed/article_feed_bloc.dart';
 import 'package:dev_news/presentation/blocs/article_detail/article_detail_bloc.dart';
 import 'package:dev_news/presentation/pages/home_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: ".env");
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
   // 💡 DEPENDENCY INJECTION MANUAL: Satukan instansiasi antar layer
   final NewsRemoteDataSource remoteDataSource = NewsRemoteDataSource();
 
